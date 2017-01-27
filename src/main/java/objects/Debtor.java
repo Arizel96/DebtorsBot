@@ -7,7 +7,7 @@ public class Debtor {
     private String name;
     private long credit;
 
-    public Debtor(String name, long credit) {
+    public Debtor(String name, long credit ) {
         this.name = name;
         this.credit = credit;
     }
@@ -28,4 +28,5 @@ public class Debtor {
     public long getCredit() {
         return credit;
     }
+
 }
