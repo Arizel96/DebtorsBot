@@ -15,7 +15,11 @@ import java.util.HashMap;
  * Created by Arizel on 20.11.2016.
  */
 public class Controller extends TelegramLongPollingBot {
-    public static final String ERROR = "Sorry, i cant understand you. Just try to write more correctly. Thank you :)";
+    public static final String ALL_DEBTORS = "огласите весь список!";
+    public static final String ERROR =  "Извините, сударь, но мне совершенно не ясны ваши намерения, пожалуйста, сделайте добавление и изменение " +
+                                        "по этому образцу : \nдобавить(изменить) Вася 100\n" +
+                                        "а удаление или извлечение по этому : \nузнать(удалить) Вася 100\n" +
+                                        "Благодарю!";
     public static final String SUCCESS = "Операция прошла успешно!";
 
     DataManager dataManager = DataManager.getInstance();
@@ -23,18 +27,24 @@ public class Controller extends TelegramLongPollingBot {
     @Override
     public void onUpdateReceived(Update update) {
         Message msg = update.getMessage();
-        HashMap<String, Debtor> data = getData(msg.getText().toLowerCase());
+        String text = msg.getText().toLowerCase();
+        if (text.trim().equals(ALL_DEBTORS)) {
+            sendMsg(dataManager.getTable(String.valueOf(msg.getChatId())), msg);
+            return;
+        }
+        HashMap<String, Debtor> data = getData(text);
         if (data == null) {
             sendMsg(ERROR, msg);
         } else {
-            sendMsg(dataManager.actionOnTheData(data), msg);
+            String response = dataManager.actionOnTheData(data, String.valueOf(msg.getChatId()));
+            sendMsg(response, msg);
         }
     }
 
 
     @Override
     public String getBotUsername() {
-        return "KianyRivs_Bot";
+        return "DebtorBot";
     }
 
 
@@ -56,7 +66,7 @@ public class Controller extends TelegramLongPollingBot {
 
     private HashMap getData(String msg) {
         String response = operationDefine(msg);
-        Debtor debtor = dataDefine(msg);
+        Debtor debtor = dataDefine(msg, response);
         if (debtor == null || response.equals(ERROR)) {
             return null;
         }else {
@@ -66,7 +76,7 @@ public class Controller extends TelegramLongPollingBot {
         }
     }
 
-    private Debtor dataDefine(String msg) {
+    private Debtor dataDefine(String msg, String response) {
         String string = msg.replaceAll("[!,/@#%$^&*()+=_-~`'.]", " ");
         String[] strings = string.split(" ");
         String name = null;
@@ -80,10 +90,12 @@ public class Controller extends TelegramLongPollingBot {
                 }
             }
         }
-        if (name != null && credit != 0) {
+        if (name == null) return null;
+        if (response.equals("delete") || response.equals("select")) {
             return new Debtor(name, credit);
         } else {
-            return null;
+            Debtor debtor = credit == 0 ? null : new Debtor(name, credit);
+            return debtor;
         }
 
     }
